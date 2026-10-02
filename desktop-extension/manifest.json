@@ -1,0 +1,85 @@
+{
+  "manifest_version": "0.2",
+  "name": "scrapecreators",
+  "display_name": "ScrapeCreators",
+  "version": "2.0.0",
+  "description": "ScrapeCreators MCP: 190 tools, private accounts, confirmed paid research and bounded batches.",
+  "long_description": "Shared API/schema/guard implementation. Research may consume credits and requires explicit confirmation. Private credentials stay local. Account metadata reads and local discovery remain available in read-only mode. Fixtures and protocol validation are not live account outcomes.",
+  "author": {
+    "name": "Navid Moazzez",
+    "url": "https://navid.me"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thenavidm/scrapecreators-mcp-cli"
+  },
+  "homepage": "https://github.com/thenavidm/scrapecreators-mcp-cli",
+  "documentation": "https://github.com/thenavidm/scrapecreators-mcp-cli/blob/main/INSTALL.md",
+  "support": "https://github.com/thenavidm/scrapecreators-mcp-cli/issues",
+  "license": "AGPL-3.0-or-later",
+  "keywords": [
+    "scrapecreators",
+    "public-research",
+    "transcripts",
+    "ad-library",
+    "paid-call-approval",
+    "mcp",
+    "cli",
+    "desktop-extension"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "SCRAPECREATORS_API_KEY": "${user_config.api_key}",
+        "SCRAPECREATORS_TOKEN_FILE": "${user_config.token_file}",
+        "SCRAPECREATORS_READ_ONLY": "${user_config.read_only}",
+        "SCRAPECREATORS_ALLOW_SPENDING": "${user_config.allow_spending}"
+      }
+    }
+  },
+  "user_config": {
+    "token_file": {
+      "type": "string",
+      "title": "Private token-only file",
+      "description": "Absolute regular owner-only token file, at most 64 KB. Never bundle it.",
+      "required": false
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read only",
+      "description": "Hide/refuse potentially paid research, leaving local/account metadata reads.",
+      "default": false,
+      "required": false
+    },
+    "api_key": {
+      "type": "string",
+      "title": "Private ScrapeCreators API key",
+      "description": "API key from your account; leave empty for token_file.",
+      "required": false,
+      "sensitive": true
+    },
+    "allow_spending": {
+      "type": "boolean",
+      "title": "Allow confirmed paid research",
+      "description": "Allow only explicitly confirmed credit-consuming research.",
+      "default": true,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22"
+    }
+  }
+}

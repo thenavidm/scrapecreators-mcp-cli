@@ -1,0 +1,15 @@
+{
+  "checked": "2026-10-02",
+  "source": "https://docs.scrapecreators.com/openapi.json",
+  "apiVersion": "1.0.0",
+  "operationCount": 188,
+  "originalSha256": "b65d0802106589f991a2f7ac9268dba2859fd6962450bb0eedc08c07b4563360",
+  "sanitizedSha256": "4d22b1fe5941d55f4d544d1bf255c2bf11d47c0b8586401f566057b1d1269fa3",
+  "baseline": "Official @scrapecreators/cli 1.0.44: same 188 endpoint variants across 37 registry groups; provider docs introduction counts are older",
+  "notes": [
+    "All schema examples are removed from the public snapshot.",
+    "GET and read-like POST research can consume credits. All research is confirmation-gated; account metadata remains read-only.",
+    "No borrowed or estimated task/token savings.",
+    "This fixed dated snapshot is a fixture/protocol candidate, not a released or live-account-validated offering."
+  ]
+}
