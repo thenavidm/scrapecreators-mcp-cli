@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Use the native terminal capture at 1040 source pixels with lossless GIF optimization, displayed at 520 pixels, matching the Bluesky/Substack reference. Original assets remain available.
+
 ## 2.0.0 - 2026-10-02
 
 - Refresh the reviewed current OpenAPI baseline: 188 endpoint variants across 37 groups, plus local accounts and bounded research_batch, 190 shared tools/CLI commands.
