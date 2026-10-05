@@ -13,7 +13,7 @@ ScrapeCreators MCP server and CLI for Codex and AI agents. **190 tools: five loc
 
 One package provides local MCP, the same operations as task CLI commands, and a bundled desktop .mcpb extension.
 
-Built and maintained by [Navid Moazzez](https://navid.me?utm_source=github&utm_medium=referral&utm_campaign=scrapecreators-mcp-cli&utm_content=readme). Complete installation and private account setup are in [INSTALL.md](INSTALL.md).
+Built and maintained by [Navid Moazzez](https://navid.me?utm_source=github&utm_medium=referral&utm_campaign=scrapecreators-mcp-cli&utm_content=readme). Built on [Slipway](https://github.com/thenavidm/slipway), which turns one definition of each tool into the MCP server and the CLI. Complete installation and private account setup are in [INSTALL.md](INSTALL.md).
 
 <img src="https://cdn.navid.me/repos/scrapecreators-mcp-cli-retina.gif" alt="Illustrated ScrapeCreators workflow in the same house terminal used on navid.me" width="520">
 
@@ -112,7 +112,7 @@ scrapecreators-cli doctor
 scrapecreators-cli tools
 ```
 
-Node 22+ is required for manual CLI/MCP setup. Discovery, schemas and list_accounts work without a key. The [scrapecreators-2.0.0.mcpb desktop archive](https://github.com/thenavidm/scrapecreators-mcp-cli/releases/download/v2.0.0/scrapecreators-2.0.0.mcpb) bundles production dependencies for a compatible host. Full setup is in [INSTALL.md](INSTALL.md).
+Node 22+ is required for manual CLI/MCP setup. Discovery, schemas and list_accounts work without a key. The [scrapecreators-3.0.0.mcpb desktop archive](https://github.com/thenavidm/scrapecreators-mcp-cli/releases/download/v3.0.0/scrapecreators-3.0.0.mcpb) bundles production dependencies for a compatible host. Full setup is in [INSTALL.md](INSTALL.md).
 
 After private environment configuration:
 
@@ -192,9 +192,9 @@ IDs/cursors above are illustrative; use the selected public resource and cursor 
 | --help / schema COMMAND | Current argument help / full JSON Schema |
 | --json | Structured JSON |
 | --compact | One-line JSON |
-| --agent | Compact JSON, no prompts or color |
+| --agent | Compact JSON and no prompts; never confirms a write |
 | --select a,b.c | Keep selected fields, including nested objects/arrays |
-| --no-color / --no-input | Noninteractive house flags |
+| --no-color / --no-input | Noninteractive switches |
 | --yes | Never replaces paid-call confirmation |
 | --confirm | Approve only the requested paid research |
 | --account NAME | Select private local credentials |
@@ -203,7 +203,8 @@ IDs/cursors above are illustrative; use the selected public resource and cursor 
 | Exit | Meaning |
 | --- | --- |
 | 0 | Success |
-| 2 | Invalid arguments or refused paid call |
+| 1 | Unexpected error |
+| 2 | Invalid arguments or refused paid call, an unknown command or a hidden write |
 | 3 | Resource not found |
 | 4 | Authentication/permission failure |
 | 5 | API/transport failure |
@@ -214,17 +215,21 @@ Results go to stdout, errors as JSON to stderr. Selection changes local output, 
 
 ## 7. MCP or CLI and token cost
 
-MCP and CLI use the same SDK server, schemas, validation and HTTP handlers. The CLI talks to that server through the SDK's in-memory transport; there is no second API implementation.
+MCP and CLI use the same schemas, validation and HTTP handlers: [Slipway](https://github.com/thenavidm/slipway) builds the MCP server, over stdio or `--http`, and the CLI from each tool's one definition; there is no second API implementation.
 
-| Measurement | What to include |
-| --- | --- |
-| Eager MCP loading | All tool schemas and instructions |
-| Default/deferred tool search | Actual selected schemas and discovery overhead |
-| Skill read once | Full SKILL.md and command discovery |
-| Recurring skill discovery | The installed skill's listing text |
-| Matched successful task | Help/schema, reasoning, calls/commands, results, errors and retries |
+Measured on 2026-10-05 against 2.0.1, with Claude Code 2.1.286 on Claude Opus 5.5 (one short prompt with and without the server connected, the difference read from the API's own usage figures) and Codex 0.159.3 on gpt-6.1-sol:
 
-Fresh Codex usage measurements are pending. Claude Code measurements are deferred and do not block this release. Do not estimate tokens from characters, substitute another repo's results or declare zero CLI cost. Record model/client/package versions and date, loading settings, input/output usage, latency and equivalent outcomes. Compare a small public-profile lookup and a bounded transcript research task across supported official/local surfaces, using the same authorized data and result fields. API credits and service costs remain separate. No measured superiority is claimed.
+| Cost | 2.0.1 | 3.0.0 |
+| --- | --- | --- |
+| Claude Code, every tool loaded, every message | 89,024 | 88,384 |
+| Claude Code's default, tool search, every message | 3,223 | 3,224 |
+| `SKILL.md`, read once | 1,326 | 1,392 |
+| Codex over the CLI, one task, median of five | 86,664 | 83,060 |
+| Codex over MCP, the same task, median of five | 76,914 | 48,790 |
+
+The task was "find the command that gets a TikTok video's transcript, and the flags it requires". Every tool loaded costs less, while the list a client receives grows by an approval marker on the 185 paid tools, which Claude Code does not pass to the model. Over the CLI, every 3.0.0 run asked `which`, a 478-character answer, where every 2.0.1 run read the 13,019-character command list. Over MCP, four 3.0.0 runs answered after printing part of the tool list, against two 2.0.1 runs, so the median fell; where both printed the whole list, they read about the same, 76,914 and 77,022. `SKILL.md` costs 66 more because it says how approval works over MCP and what exit codes 1 and 2 cover.
+
+Tool-list bytes or characters divided by four are not API usage, and no other offering was measured.
 
 ## 8. Every tool and argument
 
@@ -433,7 +438,7 @@ The full current API catalogue and every argument below derive from actual stdio
 | `user_id` | No; body/guard rules apply | string | TikTok user id. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 Provide handle or user_id; an empty selector is rejected before a network call.
 
@@ -445,7 +450,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `handle` | Yes | string | TikTok handle |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_audience_demographics
 
@@ -455,7 +460,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `handle` | Yes | string | TikTok handle |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_collection_videos
 
@@ -466,7 +471,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | Public TikTok collection URL |
 | `cursor` | No; body/guard rules apply | string | Cursor to get more videos. Use max_cursor from the previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_profile_videos
 
@@ -481,7 +486,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `region` | No; body/guard rules apply | string | Region (country) for the proxy. Defaults to GB. If a profile should have videos but returns none, try US or another relevant two-letter country code. |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_video_info
 
@@ -496,7 +501,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `download_media` | No; body/guard rules apply | boolean | Set to true to download the video/images and get back permanent Supabase URLs. Costs 10 credits if media is found, 1 credit otherwise. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_transcript
 
@@ -508,7 +513,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `language` | No; body/guard rules apply | string | Language of the transcript. 2 letter language code, ie 'en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'zh' |
 | `use_ai_as_fallback` | No; body/guard rules apply | string | Set to 'true' to use AI when an existing transcript is not found. The AI fallback supports videos up to 2 minutes and costs 10 credits; existing transcripts have no length limit. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_live
 
@@ -518,7 +523,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `handle` | Yes | string | TikTok handle |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_live_info
 
@@ -529,7 +534,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `room_id` | Yes | string | TikTok live room id. Get this from `/v1/tiktok/user/live` in `liveRoomUserInfo.roomId` or `liveRoom.id` when the user is live. |
 | `user_id` | Yes | string | TikTok numeric user id for the live owner. Get this from `/v1/tiktok/profile` in `user.id`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_comments
 
@@ -541,7 +546,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | number | Cursor to get more comments. Get 'cursor' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_comment_replies
 
@@ -553,7 +558,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | TikTok video URL. This is the url from the comments endpoint. |
 | `cursor` | No; body/guard rules apply | number | Cursor to get more replies. Get 'cursor' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_following
 
@@ -565,7 +570,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `min_time` | No; body/guard rules apply | number | Used to paginate. Get 'min_time' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_followers
 
@@ -578,7 +583,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `min_time` | No; body/guard rules apply | number | Used to paginate. Get 'min_time' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_search_users
 
@@ -590,7 +595,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | number | Cursor to get more users. Get 'cursor' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_search_suggestions
 
@@ -601,7 +606,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `query` | Yes | string | Search query to get suggestions for |
 | `region` | No; body/guard rules apply | string | Region code for suggestions |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_search_by_hashtag
 
@@ -614,7 +619,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | number | Cursor to get more videos. Get 'cursor' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_search_by_keyword
 
@@ -629,7 +634,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | number | Cursor to get more videos. Get 'cursor' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_top_search
 
@@ -643,7 +648,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `region` | No; body/guard rules apply | string | Note, this doesn't filter the tiktoks only in a specfic region, it puts the proxy there. Use it in case you want to scrape posts only available for some country. Use 2 letter country codes like US, GB, FR, etc |
 | `cursor` | No; body/guard rules apply | number | Cursor to get more videos. Get 'cursor' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_get_popular_creators
 
@@ -657,7 +662,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `creatorCountry` | No; body/guard rules apply | string | Country code of the creator Values: `AU`, `BR`, `CA`, `EG`, `FR`, `DE`, `ID`, `IL`, `IT`, `JP`, `MY`, `PH`, `RU`, `SA`, `SG`, `KR`, `ES`, `TW`, `TH`, `TR`, `AE`, `GB`, `US`, `VN`. |
 | `audienceCountry` | No; body/guard rules apply | string | Country code of the audience/follower Values: `AU`, `BR`, `CA`, `EG`, `FR`, `DE`, `ID`, `IL`, `IT`, `JP`, `MY`, `PH`, `RU`, `SA`, `SG`, `KR`, `ES`, `TW`, `TH`, `TR`, `AE`, `GB`, `US`, `VN`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_get_song_details
 
@@ -667,7 +672,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `clipId` | Yes | string | This is a little confusing because this isn't songId like you'd think. It is the clipId. I guess because you can clip different portions of a song 🤷‍♂️ |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_tiktoks_using_song
 
@@ -678,7 +683,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `clipId` | No; body/guard rules apply | string | This is clipId. Can be found on a url like so: https://www.tiktok.com/music/That%27s-Who-I-Praise-7370375686554782506, where 7370375686554782506 is the clipId |
 | `cursor` | No; body/guard rules apply | number | The cursor to get the next page of results. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_trending_feed
 
@@ -689,7 +694,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `region` | Yes | string | Where you want the proxy to be. This doesn't mean that you will only see TikToks from this region, you will just see the content that isn't banned in that region. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_shop_shop_search
 
@@ -701,7 +706,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `page` | No; body/guard rules apply | number | Page number to retrieve |
 | `region` | No; body/guard rules apply | string | Region to search shop products in. Non-US TikTok Shop regions are not reliable right now and may return limited or inconsistent results. Sorry for the inconvenience. Values: `US`, `GB`, `DE`, `FR`, `IT`, `ID`, `MY`, `MX`, `PH`, `SG`, `ES`, `TH`, `VN`, `BR`, `JP`, `IE`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_shop_shop_products
 
@@ -714,7 +719,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `sort_by` | No; body/guard rules apply | string | Sort products by best-selling items (`top`) or newest products (`new_releases`). Defaults to `top`. Values: `top`, `new_releases`. |
 | `region` | No; body/guard rules apply | string | Region to get shop products from. Defaults to US if not provided. Non-US regions are not reliable right now and may return `not_found` or limited catalog data even when the shop appears in search. Sorry for the inconvenience. Values: `US`, `GB`, `DE`, `FR`, `IT`, `ID`, `MY`, `MX`, `PH`, `SG`, `ES`, `TH`, `VN`, `BR`, `JP`, `IE`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_shop_product_details
 
@@ -725,7 +730,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | The URL of the product to get details for. |
 | `region` | No; body/guard rules apply | string | Region for the product details request. US is the reliable region right now; non-US regions should not be considered reliable and may return `bad_request` or missing product data. Sorry for the inconvenience. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_shop_product_reviews
 
@@ -738,7 +743,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `region` | No; body/guard rules apply | string | The region of the product. US is the reliable region right now; non-US regions should not be considered reliable and may return limited or inconsistent review data. Sorry for the inconvenience. |
 | `page` | No; body/guard rules apply | number | The page number of the reviews |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_shop_user_showcase
 
@@ -750,7 +755,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `region` | No; body/guard rules apply | string | Region to put the proxy in. Non-US TikTok Shop regions are not reliable right now and may return limited or inconsistent showcase data. Sorry for the inconvenience. |
 | `cursor` | No; body/guard rules apply | string | The cursor to the next page of products |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_profile
 
@@ -762,7 +767,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_basic_profile
 
@@ -773,7 +778,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `userId` | No; body/guard rules apply | string | Instagram user id |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_posts
 
@@ -785,7 +790,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `next_max_id` | No; body/guard rules apply | string | Cursor to get next page of results. |
 | `trim` | No; body/guard rules apply | boolean | Set to true to get a trimmed response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_user_tagged_posts
 
@@ -796,7 +801,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `user_id` | Yes | string | Numeric Instagram user ID. |
 | `cursor` | No; body/guard rules apply | string | Cursor returned by the previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_reels
 
@@ -809,7 +814,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `max_id` | No; body/guard rules apply | string | Max id to get more reels. Get 'max_id' from previous response. |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_post_reel_info
 
@@ -824,7 +829,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `include_play_count` | No; body/guard rules apply | boolean | Set to false to omit `video_play_count` and skip its additional fetch for a faster response. Defaults to true. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_transcript
 
@@ -835,7 +840,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | Instagram post or reel URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_search_instagram
 
@@ -845,7 +850,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `query` | Yes | string | The username, hashtag, place, or keyword to search for. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_popular_search
 
@@ -856,7 +861,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `query` | Yes | string | The Popular topic to search for. |
 | `cursor` | No; body/guard rules apply | string | The opaque cursor returned by the previous response. Use it with the same query to fetch the next page of posts. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_search_hashtag_posts
 
@@ -869,7 +874,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `media_type` | No; body/guard rules apply | string | Use all to search public posts and reels, or reels to only return reels. Defaults to all. Values: `all`, `reels`. |
 | `cursor` | No; body/guard rules apply | string | The cursor returned by the previous response. It is the next Google results page number and cannot exceed 11; cursor 12 or greater returns a 400 response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_search_instagram_profiles
 
@@ -879,7 +884,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `query` | Yes | string | The profile name or username to search for. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_search_reels
 
@@ -891,7 +896,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `date_posted` | No; body/guard rules apply | string | Google-indexed date window. Recent hour/day filters are not supported because Google does not index Instagram reels reliably enough in those windows. Values: `last-week`, `last-month`, `last-year`. |
 | `page` | No; body/guard rules apply | number | The page number to return. Must be between 1 and 11; page 12 or greater returns a 400 response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_get_reels_by_audio_id
 
@@ -902,7 +907,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `audio_id` | Yes | string | The audio id from the Instagram audio page URL. |
 | `cursor` | No; body/guard rules apply | string | Pagination cursor returned by Instagram from the previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_trending_reels
 
@@ -911,7 +916,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | Argument | Required | Type | Details |
 | --- | --- | --- | --- |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_comments
 
@@ -923,7 +928,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | string | The cursor to get more comments. Get 'cursor' from previous response. |
 | `include_replies` | No; body/guard rules apply | boolean | Set to true to include replies for every returned comment. This always costs 15 credits because each comment requires a separate Instagram replies request. You will still be charged 15 credits if no replies are returned. This is much slower and may time out at 29 seconds. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_comment_replies
 
@@ -935,7 +940,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `comment_id` | Yes | string | The parent comment ID from the Comments endpoint |
 | `cursor` | No; body/guard rules apply | string | The cursor to get more replies. Get `cursor` from the previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_story_highlights
 
@@ -946,7 +951,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `user_id` | No; body/guard rules apply | string | Instagram user id. Use for faster response times. |
 | `handle` | No; body/guard rules apply | string | Instagram handle. Use user_id for faster response times. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_highlights_details
 
@@ -956,7 +961,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `id` | No; body/guard rules apply | string | The ID of the highlight to get details for |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_profile_post_count
 
@@ -967,7 +972,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `handle` | Yes | string | Instagram handle |
 | `allow_estimated` | No; body/guard rules apply | boolean | Set to true to return scaled estimates when Instagram abbreviates counts for profiles with more than 10,000 posts. Defaults to false; false or omitted returns an uncharged 422 when only an estimate is available. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### instagram_embed_html
 
@@ -977,7 +982,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `handle` | Yes | string | Instagram handle |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### telegram_channel_details
 
@@ -988,7 +993,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `handle` | Yes | string | Public Telegram handle, @handle, or t.me channel URL. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### telegram_channel_posts
 
@@ -1000,7 +1005,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | string | Numeric cursor returned by the previous page. Omit it for the latest posts. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### telegram_post_details
 
@@ -1011,7 +1016,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | Public Telegram post URL. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_channel_details
 
@@ -1024,7 +1029,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | YouTube channel URL. Can pass a channelId, handle or url |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_channel_videos
 
@@ -1039,7 +1044,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `is_paid_promotions` | No; body/guard rules apply | string | Set to 'true' to search YouTube's public paid product placement / sponsorship / endorsement search surface. This returns normal YouTube videos where the creator declared paid promotion. Cannot be combined with filter, uploadDate, sortBy, type, duration, or includeExtras. |
 | `includeExtras` | No; body/guard rules apply | string | This will get you the like + comment count and the description. To get the full details of the video, use the /v1/youtube/video endpoint. Honestly, if you use this param, the error rate is higher. We might deprecate this param in the future. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_channel_playlists
 
@@ -1051,7 +1056,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `handle` | No; body/guard rules apply | string | YouTube channel handle |
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more playlists. Get 'continuationToken' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_channel_lives
 
@@ -1063,7 +1068,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `handle` | No; body/guard rules apply | string | YouTube channel handle |
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more lives. Get 'continuationToken' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_channel_community_posts
 
@@ -1075,7 +1080,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `handle` | No; body/guard rules apply | string | YouTube channel handle |
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more community posts. Get 'continuationToken' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_channel_shorts
 
@@ -1088,7 +1093,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `sort` | No; body/guard rules apply | string | Sort by newest or popular Values: `newest`, `popular`. |
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more videos. Get 'continuationToken' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_video_short_details
 
@@ -1100,7 +1105,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `language` | No; body/guard rules apply | string | Preferred response language (mapped to Accept-Language header; not guaranteed due to YouTube localization behavior). 2 letter language code, ie 'en', 'es', 'fr' etc. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_transcript
 
@@ -1113,7 +1118,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `original_audio` | No; body/guard rules apply | boolean | Set to true to return captions only in the original spoken language identified by YouTube. Takes precedence over language. If the original audio cannot be reliably identified or has no matching captions, transcript, transcript_only_text, and language are null and no credits are charged. No extra lookup or credit cost; a returned transcript costs the usual 1 credit. Omit or set to false for the existing default selection. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_video_sponsors
 
@@ -1124,7 +1129,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | YouTube video or short URL |
 | `language` | No; body/guard rules apply | string | 2 letter language code used for transcript lookup, ie 'en', 'es', 'fr' etc. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_search
 
@@ -1141,7 +1146,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more videos. Get 'continuationToken' from previous response. |
 | `includeExtras` | No; body/guard rules apply | string | This will get you the like + comment count and the description. To get the full details of the video, use the /v1/youtube/video endpoint. *This will slow down the response slightly.* |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_search_typeahead
 
@@ -1151,7 +1156,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `query` | Yes | string | Partial or complete YouTube search query |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_search_by_hashtag
 
@@ -1163,7 +1168,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more videos. Get 'continuationToken' from previous response. |
 | `type` | No; body/guard rules apply | string | Search for all types of content or only shorts Values: `all`, `shorts`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_comments
 
@@ -1175,7 +1180,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `continuationToken` | No; body/guard rules apply | string | Continuation token to get more comments. Get 'continuationToken' from previous response. |
 | `order` | No; body/guard rules apply | string | Order of comments Values: `top`, `newest`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_comment_replies
 
@@ -1185,7 +1190,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `continuationToken` | Yes | string | Continuation token for the comment replies. Use 'repliesContinuationToken' from the Comments endpoint, or 'continuationToken' from a previous replies response to paginate. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_trending_shorts
 
@@ -1194,7 +1199,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | Argument | Required | Type | Details |
 | --- | --- | --- | --- |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_playlist
 
@@ -1204,7 +1209,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `playlist_id` | Yes | string | The ID of the YouTube playlist. In the YouTube URL it will be the 'list' parameter. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### youtube_community_post_details
 
@@ -1214,7 +1219,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | The URL of the YouTube community post to get |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### rumble_search
 
@@ -1225,7 +1230,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `query` | Yes | string | Search query. |
 | `cursor` | No; body/guard rules apply | string | Cursor from the previous response. This is the next page number, like 2 or 3. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### rumble_channel_videos
 
@@ -1237,7 +1242,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | Rumble channel URL. If you'd prefer to use the handle instead, use the handle parameter. |
 | `cursor` | No; body/guard rules apply | string | Cursor from the previous response. This is the next page number, like 2 or 3. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### rumble_video
 
@@ -1247,7 +1252,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | Rumble video URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### rumble_transcript
 
@@ -1257,7 +1262,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | Rumble video URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### rumble_comments
 
@@ -1267,7 +1272,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | Rumble video URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_person_profile
 
@@ -1277,7 +1282,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | The URL of the LinkedIn profile to get |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_company_page
 
@@ -1287,7 +1292,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | The URL of the LinkedIn company page to get |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_company_posts
 
@@ -1298,7 +1303,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | The URL of the LinkedIn company page to get |
 | `page` | No; body/guard rules apply | number | The page number to get |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_search_posts
 
@@ -1310,7 +1315,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `date_posted` | No; body/guard rules apply | string | Date posted filter based on Google-indexed results Values: `last-hour`, `last-day`, `last-week`, `last-month`, `last-year`. |
 | `cursor` | No; body/guard rules apply | string | The cursor returned from the previous response. The maximum cursor is 11; cursor 12 or greater returns a 400 response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_post
 
@@ -1320,7 +1325,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | The URL of the LinkedIn post to get |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_post_transcript
 
@@ -1330,7 +1335,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | The URL of the LinkedIn post to get the transcript from |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_profile
 
@@ -1343,7 +1348,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `include_gated_profile` | No; body/guard rules apply | string | When true, returns limited public fields for gated or age-restricted profiles. Ignored for normal public profiles — those still return the full response. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_profile_reels
 
@@ -1355,7 +1360,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `next_page_id` | No; body/guard rules apply | string | To paginate through to the next page |
 | `cursor` | No; body/guard rules apply | string | To paginate through to the next page |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_profile_photos
 
@@ -1367,7 +1372,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `next_page_id` | No; body/guard rules apply | string | To paginate through to the next page |
 | `cursor` | No; body/guard rules apply | string | To paginate through to the next page |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_profile_posts
 
@@ -1379,7 +1384,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `pageId` | No; body/guard rules apply | string | Facebook profile page id |
 | `cursor` | No; body/guard rules apply | string | To paginate through the posts |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_profile_events
 
@@ -1390,7 +1395,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | The URL of the public Facebook page |
 | `cursor` | No; body/guard rules apply | string | The cursor to paginate to get more events |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_post
 
@@ -1401,7 +1406,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | The URL of the post to get |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_transcript
 
@@ -1412,7 +1417,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | Yes | string | Facebook post URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_comments
 
@@ -1424,7 +1429,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `feedback_id` | No; body/guard rules apply | string | Using feedback_id (instead of url) will *really* speed up the request. You can get the feedback_id when you make a request to /v1/facebook/post. |
 | `cursor` | No; body/guard rules apply | string | Cursor to get more comments. Get 'cursor' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_comment_replies
 
@@ -1436,7 +1441,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `expansion_token` | Yes | string | The expansion_token of the comment. You can get the expansion_token from the /v1/facebook/post/comments endpoint. |
 | `cursor` | No; body/guard rules apply | string | The cursor to paginate to the next page |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_facebook_group_info
 
@@ -1447,7 +1452,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | The Facebook group URL. Group sub-page URLs such as /about work too. |
 | `group_id` | No; body/guard rules apply | string | The numeric Facebook group ID. Provide this instead of url if you already have it. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_facebook_group_posts
 
@@ -1460,7 +1465,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `sort_by` | No; body/guard rules apply | string | How to sort the posts. Defaults to CHRONOLOGICAL. Values: `TOP_POSTS`, `RECENT_ACTIVITY`, `CHRONOLOGICAL`, `CHRONOLOGICAL_LISTINGS`. |
 | `cursor` | No; body/guard rules apply | string | The cursor to paginate to the next page |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_user
 
@@ -1471,7 +1476,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `handle` | No; body/guard rules apply | string | GitHub username/handle of the user you want the details for |
 | `url` | No; body/guard rules apply | string | GitHub user URL, e.g. https://github.com/torvalds. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_repositories
 
@@ -1486,7 +1491,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `direction` | No; body/guard rules apply | string | Sort direction: ascending or descending. Values: `asc`, `desc`. |
 | `cursor` | No; body/guard rules apply | number | Cursor from the previous response. Defaults to 1. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_pull_requests
 
@@ -1499,7 +1504,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `until` | No; body/guard rules apply | string | Only return pull requests created on or before this date. Use YYYY-MM-DD. |
 | `cursor` | No; body/guard rules apply | number | Cursor from the previous response. Defaults to 1. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_activity
 
@@ -1512,7 +1517,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `year` | No; body/guard rules apply | number | When provided, returns profile contribution activity for that year. Defaults to the current year. |
 | `cursor` | No; body/guard rules apply | number | Cursor from the previous response. Pages backward by month through the selected year. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_followers
 
@@ -1524,7 +1529,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | GitHub user URL, e.g. https://github.com/torvalds. |
 | `cursor` | No; body/guard rules apply | number | Cursor from the previous response. Defaults to 1. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_following
 
@@ -1536,7 +1541,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | GitHub profile URL |
 | `cursor` | No; body/guard rules apply | number | Cursor from the previous response. Defaults to 1. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_contributions
 
@@ -1548,7 +1553,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | GitHub profile URL |
 | `year` | No; body/guard rules apply | number | Contribution graph year. Defaults to the current year. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_repository
 
@@ -1558,7 +1563,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `url` | Yes | string | GitHub repository URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_trending_repositories
 
@@ -1570,7 +1575,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `since` | No; body/guard rules apply | string | Trending range: daily, weekly, or monthly. Defaults to daily. Values: `daily`, `weekly`, `monthly`. |
 | `spoken_language_code` | No; body/guard rules apply | string | Optional spoken language code filter, e.g. en. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### github_trending_developers
 
@@ -1581,7 +1586,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `language` | No; body/guard rules apply | string | Optional trending coding language, e.g. javascript, python, or go. |
 | `since` | No; body/guard rules apply | string | Trending range: daily, weekly, or monthly. Defaults to daily. Values: `daily`, `weekly`, `monthly`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_marketplace_marketplace_location_search
 
@@ -1591,7 +1596,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | --- | --- | --- | --- |
 | `query` | Yes | string | Location search query |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_marketplace_marketplace_search
 
@@ -1613,7 +1618,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `availability` | No; body/guard rules apply | string | Availability filter Values: `available`, `sold`, `all`. |
 | `cursor` | No; body/guard rules apply | string | Opaque pagination cursor returned from the previous response. Pass it back as-is. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_marketplace_marketplace_item
 
@@ -1624,7 +1629,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `id` | No; body/guard rules apply | string | Facebook Marketplace item id |
 | `url` | No; body/guard rules apply | string | Facebook Marketplace item URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_events_search_events
 
@@ -1635,7 +1640,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `query` | Yes | string | The query to search for |
 | `cursor` | No; body/guard rules apply | string | The cursor to paginate to the next page |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_events_events
 
@@ -1647,7 +1652,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `time` | No; body/guard rules apply | string | The time frame to search for. Defaults to all time Values: `today`, `this_week`, `next_week`. |
 | `cursor` | No; body/guard rules apply | string | The cursor to paginate to the next page |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_events_event_details
 
@@ -1658,7 +1663,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `id` | No; body/guard rules apply | string | The ID of the event |
 | `url` | No; body/guard rules apply | string | The URL of the event |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_ad_library_ad_details
 
@@ -1671,7 +1676,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_ad_library_ad_transcript
 
@@ -1683,7 +1688,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `url` | No; body/guard rules apply | string | Facebook Ad URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_ad_library_search
 
@@ -1704,7 +1709,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | string | Cursor to paginate through results |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### facebook_ad_library_search_post
 
@@ -1725,7 +1730,7 @@ Provide handle or user_id; an empty selector is rejected before a network call.
 | `cursor` | No; body/guard rules apply | string | Cursor to paginate through results |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 | `payload` | No; body/guard rules apply | object | Complete JSON request body instead of body flags. Preserves current endpoint fields and values. |
 | `payload_file` | No; body/guard rules apply | string | Regular local JSON body file, at most 5 MB. Cannot be mixed with body flags or payload. |
 
@@ -1749,7 +1754,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `cursor` | No; body/guard rules apply | string | Cursor to paginate through results |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 Provide pageId or companyName in the applicable query/body; an empty selector is rejected locally.
 
@@ -1771,7 +1776,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `cursor` | No; body/guard rules apply | string | Cursor to paginate through results |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 | `payload` | No; body/guard rules apply | object | Complete JSON request body instead of body flags. Preserves current endpoint fields and values. |
 | `payload_file` | No; body/guard rules apply | string | Regular local JSON body file, at most 5 MB. Cannot be mixed with body flags or payload. |
 
@@ -1787,7 +1792,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | --- | --- | --- | --- |
 | `query` | Yes | string | Keyword to search for |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_ad_library_ad_library_search
 
@@ -1800,7 +1805,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `adv_biz_ids` | No; body/guard rules apply | string | TikTok advertiser business ID from a See all ads link. Use it with advertiser_name to pin the exact advertiser. Required companion: advertiser_name; ID-only searches return 400 because TikTok ignores the ID without the name. |
 | `cursor` | No; body/guard rules apply | string | Opaque cursor returned from the previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### tiktok_ad_library_ad_library_ad
 
@@ -1810,7 +1815,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | --- | --- | --- | --- |
 | `ad_id` | Yes | string | Creative Center Top Ads material ID or URL, or a public Ads Library ad ID or library.tiktok.com detail URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### google_ad_library_company_ads
 
@@ -1829,7 +1834,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `get_ad_details` | No; body/guard rules apply | string | Set to true to get the ad details. Will cost 25 credits. |
 | `cursor` | No; body/guard rules apply | string | Cursor to paginate through results |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### google_ad_library_ad_details
 
@@ -1840,7 +1845,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `url` | Yes | string | The url of the ad |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### google_ad_library_advertiser_search
 
@@ -1851,7 +1856,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `query` | Yes | string | The query to search for |
 | `region` | No; body/guard rules apply | string | 2-letter country code to search in. Defaults to US when omitted. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_ad_library_search_ads
 
@@ -1867,7 +1872,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `endDate` | No; body/guard rules apply | string | End date in YYYY-MM-DD format. Must be used with startDate and cannot be today or a future date. |
 | `paginationToken` | No; body/guard rules apply | string | Pagination token to paginate through results |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkedin_ad_library_ad_details
 
@@ -1877,7 +1882,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | --- | --- | --- | --- |
 | `url` | Yes | string | The url of the ad |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitter_profile
 
@@ -1888,7 +1893,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `handle` | Yes | string | Twitter handle |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitter_user_tweets
 
@@ -1899,7 +1904,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `handle` | Yes | string | Twitter handle |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitter_tweet_details
 
@@ -1911,7 +1916,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitter_transcript
 
@@ -1922,7 +1927,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `url` | Yes | string | Tweet URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitter_community
 
@@ -1932,7 +1937,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | --- | --- | --- | --- |
 | `url` | Yes | string | Community URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitter_community_tweets
 
@@ -1942,7 +1947,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | --- | --- | --- | --- |
 | `url` | Yes | string | Community URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_subreddit_details
 
@@ -1954,7 +1959,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `url` | No; body/guard rules apply | string | Subreddit URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_subreddit_posts
 
@@ -1969,7 +1974,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_subreddit_search
 
@@ -1983,7 +1988,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `timeframe` | No; body/guard rules apply | string | Timeframe to filter results Values: `all`, `year`, `month`, `week`, `day`, `hour`. |
 | `cursor` | No; body/guard rules apply | string | Cursor to get more results. Get 'cursor' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_post
 
@@ -1993,7 +1998,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | --- | --- | --- | --- |
 | `url` | Yes | string | Reddit post URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_post_comments
 
@@ -2005,7 +2010,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `cursor` | No; body/guard rules apply | string | One opaque cursor returned by the previous response to get more comments or replies. Do not combine multiple cursors. |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_post_comments_post
 
@@ -2017,7 +2022,7 @@ Provide pageId or companyName in the applicable query/body; an empty selector is
 | `cursor` | No; body/guard rules apply | string | One opaque cursor returned by the previous response to get more comments or replies. Do not combine multiple cursors. |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 | `payload` | No; body/guard rules apply | object | Complete JSON request body instead of body flags. Preserves current endpoint fields and values. |
 | `payload_file` | No; body/guard rules apply | string | Regular local JSON body file, at most 5 MB. Cannot be mixed with body flags or payload. |
 
@@ -2033,7 +2038,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `language` | No; body/guard rules apply | string | 2 letter language code. Defaults to en. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### reddit_search
 
@@ -2048,7 +2053,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `after` | No; body/guard rules apply | string | Used to paginate to next page |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### truth_social_profile
 
@@ -2058,7 +2063,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `handle` | Yes | string | Truth Social username |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### truth_social_user_posts
 
@@ -2071,7 +2076,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `next_max_id` | No; body/guard rules apply | string | Used to paginate to next page |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### truth_social_post
 
@@ -2082,7 +2087,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | Truth Social post URL |
 | `download_media` | No; body/guard rules apply | boolean | Set to true to download the attached video/images and get back permanent Supabase URLs. Costs 10 credits if media is found, 1 credit otherwise. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### threads_profile
 
@@ -2093,7 +2098,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | Yes | string | Threads username |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### threads_posts
 
@@ -2104,7 +2109,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | Yes | string | Threads username |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### threads_post
 
@@ -2116,7 +2121,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### threads_search_by_keyword
 
@@ -2129,7 +2134,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `end_date` | No; body/guard rules apply | string | End date to search for |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### threads_search_users
 
@@ -2139,7 +2144,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `query` | Yes | string | Username to search for |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### bluesky_profile
 
@@ -2149,7 +2154,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `handle` | Yes | string | Bluesky handle |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### bluesky_posts
 
@@ -2160,7 +2165,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | No; body/guard rules apply | string | Bluesky handle |
 | `user_id` | No; body/guard rules apply | string | Bluesky 'did'. (For some reason Bluesky calls their user ids, 'did' for whatever reason) |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### bluesky_post
 
@@ -2170,7 +2175,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `url` | Yes | string | Bluesky post URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### pinterest_search
 
@@ -2182,7 +2187,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `cursor` | No; body/guard rules apply | string | Cursor |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### pinterest_pin
 
@@ -2194,7 +2199,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### pinterest_user_boards
 
@@ -2205,7 +2210,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | Yes | string | The username of the user to get boards for. (e.g. broadstbullycom from https://www.pinterest.com/broadstbullycom/) |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### pinterest_board
 
@@ -2217,7 +2222,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `cursor` | No; body/guard rules apply | string | The cursor to get the next page of results |
 | `trim` | No; body/guard rules apply | boolean | Set to true for a trimmed down version of the response |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### google_search
 
@@ -2230,7 +2235,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `date_posted` | No; body/guard rules apply | string | Date posted Values: `last-hour`, `last-day`, `last-week`, `last-month`, `last-year`. |
 | `page` | No; body/guard rules apply | number | Page number to retrieve. Must be between 1 and 11; page 12 or greater returns a 400 response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitch_profile
 
@@ -2241,7 +2246,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | Yes | string | Twitch handle |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitch_user_videos
 
@@ -2253,7 +2258,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `filter_by` | No; body/guard rules apply | string | Filter by Values: `HIGHLIGHT`, `ARCHIVE`, `UPLOAD`. |
 | `sort_by` | No; body/guard rules apply | string | Sort by Values: `TIME`, `VIEWS`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitch_user_schedule
 
@@ -2263,7 +2268,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `handle` | Yes | string | Twitch handle |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitch_clip_transcript
 
@@ -2274,7 +2279,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | Twitch clip URL |
 | `use_ai_as_fallback` | No; body/guard rules apply | boolean | Use AI transcription only when native captions are unavailable. Costs 10 credits when an AI transcript is returned. Defaults to false. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### twitch_clip
 
@@ -2285,7 +2290,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | Twitch clip URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### apple_music_artist
 
@@ -2296,7 +2301,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Apple Music artist id. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | Apple Music artist URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### apple_music_album
 
@@ -2307,7 +2312,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Apple Music album id. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | Apple Music album URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### apple_music_track
 
@@ -2318,7 +2323,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Apple Music song id. Some songs have standalone song URLs; for album tracks, use the url parameter. |
 | `url` | No; body/guard rules apply | string | Apple Music song URL or album track URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### apple_music_search
 
@@ -2329,7 +2334,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `query` | Yes | string | Search query |
 | `type` | No; body/guard rules apply | string | Result type to return. Use all, song, album, artist, playlist, station, music_video, or radio_episode. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_artist
 
@@ -2340,7 +2345,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Spotify artist id. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | Spotify artist URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_track
 
@@ -2351,7 +2356,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Spotify track id. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | Spotify song URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_album
 
@@ -2362,7 +2367,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Spotify album id. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | Spotify album URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_playlist
 
@@ -2374,7 +2379,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | No; body/guard rules apply | string | Spotify playlist URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `cursor` | No; body/guard rules apply | string | Cursor returned by the previous response. Omit it for the first page. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_search
 
@@ -2384,7 +2389,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `query` | Yes | string | Search query |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_podcast
 
@@ -2395,7 +2400,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `id` | No; body/guard rules apply | string | Spotify podcast id. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | Spotify podcast URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### spotify_podcast_episodes
 
@@ -2407,7 +2412,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | No; body/guard rules apply | string | Spotify podcast URL. If you'd prefer to use the id instead, you can use the id parameter instead. |
 | `cursor` | No; body/guard rules apply | number | Cursor returned by the previous response. Omit for the first page. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### soundcloud_artist
 
@@ -2418,7 +2423,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | No; body/guard rules apply | string | SoundCloud artist handle. If you'd prefer to use the URL instead, you can use the url parameter instead. |
 | `url` | No; body/guard rules apply | string | SoundCloud artist URL. If you'd prefer to use the handle instead, you can use the handle parameter instead. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### soundcloud_artist_tracks
 
@@ -2430,7 +2435,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | No; body/guard rules apply | string | SoundCloud artist tracks URL. If you'd prefer to use the handle instead, you can use the handle parameter instead. |
 | `cursor` | No; body/guard rules apply | string | Cursor to get more tracks. Get 'cursor' from previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### soundcloud_track
 
@@ -2440,7 +2445,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `url` | Yes | string | SoundCloud track URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### kwai_profile
 
@@ -2451,7 +2456,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | No; body/guard rules apply | string | Kwai profile handle. Use this or url. |
 | `url` | No; body/guard rules apply | string | Kwai profile URL. Use this or handle. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### kwai_user_posts
 
@@ -2464,7 +2469,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `cursor` | No; body/guard rules apply | string | Cursor from the previous response for the next page |
 | `count` | No; body/guard rules apply | number | Number of posts to return, max 50 |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### kwai_post
 
@@ -2474,7 +2479,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `url` | No; body/guard rules apply | string | Kwai post URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### kick_clip_transcript
 
@@ -2485,7 +2490,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | Kick clip URL |
 | `use_ai_as_fallback` | No; body/guard rules apply | boolean | Use AI transcription only when native captions are unavailable. Costs 10 credits when an AI transcript is returned. Defaults to false. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### kick_clip
 
@@ -2495,7 +2500,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `url` | Yes | string | Kick clip URL |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### snapchat_user_profile
 
@@ -2505,7 +2510,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `handle` | Yes | string | Snapchat username |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### snapchat_spotlight_by_link
 
@@ -2515,7 +2520,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `url` | Yes | string | Snapchat Spotlight URL. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### snapchat_spotlight_comments_by_link
 
@@ -2526,7 +2531,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | Snapchat Spotlight URL. |
 | `cursor` | No; body/guard rules apply | string | Pagination cursor from the previous response. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### creator_tools_find_social_profiles
 
@@ -2538,7 +2543,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `handle` | Yes | string | Creator handle without a profile URL. A leading @ is optional. |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### creator_tools_get_age_and_gender
 
@@ -2548,7 +2553,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | --- | --- | --- | --- |
 | `url` | Yes | string | URL to users social profile |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linktree_linktree_page
 
@@ -2559,7 +2564,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | URL to Linktree page |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### komi_komi_page
 
@@ -2570,7 +2575,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | URL to Komi page |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### pillar_pillar_page
 
@@ -2581,7 +2586,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | URL to Pillar page |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### linkbio_linkbio_page
 
@@ -2592,7 +2597,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | URL to Linkbio (lnk.bio) page |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### amazon_shop_amazon_shop_page
 
@@ -2603,7 +2608,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | URL to Amazon Shop page |
 | `pageToken` | No; body/guard rules apply | string | Opaque page token returned by a previous response for the same shop URL. Pass it back unchanged and do not infer the response type from its prefix. A page can contain lists, videos, or both. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### scrapecreators_get_credit_balance
 
@@ -2651,7 +2656,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `url` | Yes | string | Linkme profile URL |
 | `cache_max_age` | No; body/guard rules apply | string | Maximum acceptable provider-cache age; a miss may consume the normal endpoint credits. Values: `1d`, `3d`, `7d`, `14d`, `30d`. |
 | `account` | No; body/guard rules apply | string | Named private ScrapeCreators account; selects credentials, not a remote account ID. |
-| `confirm` | No; body/guard rules apply | boolean | Must be true for the specific approved credit-consuming research call. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 #### list_accounts
 
@@ -2670,7 +2675,7 @@ A JSON body is required; body flags, payload or payload_file are alternatives. B
 | `requests` | Yes | array | See the exact schema before calling. minItems: `1`. maxItems: `20`. Items: object. |
 | `max_calls` | Yes | integer | See the exact schema before calling. minimum: `1`. maximum: `20`. |
 | `account` | No; body/guard rules apply | string | See the exact schema before calling. |
-| `confirm` | No; body/guard rules apply | boolean | See the exact schema before calling. |
+| `confirm` | No; body/guard rules apply | boolean | Set true only when the user asked for exactly this action. |
 
 Each requests item requires tool and arguments, with no other fields. tool must be one of the 184 potentially paid API tools, never an account read or recursive batch. Inner arguments cannot select account or confirm; the outer batch owns both. Full nested schema and current allowed names: scrapecreators-cli schema research-batch.
 
@@ -2738,17 +2743,19 @@ Set SCRAPECREATORS_DEFAULT_ACCOUNT=work. list_accounts reveals only labels, defa
 
 ## 12. Approving paid research safely
 
-All 185 potentially paid tools require confirm=true in MCP or --confirm in CLI for the exact requested call/batch. --agent and --yes never grant consent. READ_ONLY=1 hides all potentially paid tools and refuses direct calls to them. ALLOW_SPENDING=0 refuses confirmed paid calls too. Five local/account reads remain; account metadata can still be private.
+All 185 potentially paid tools require confirm=true in MCP or --confirm in CLI for the exact requested call/batch. --agent and --yes never grant consent. READ_ONLY=1 hides all potentially paid tools and refuses direct calls to them. ALLOW_DESTRUCTIVE=0, or its 2.0 name ALLOW_SPENDING=0, refuses confirmed paid calls too. Five local/account reads remain; account metadata can still be private.
+
+Over MCP a person approves each paid call where the client can ask: Claude Code (2.1.246 and later) shows its own prompt, and a client that can show forms asks with an approval form whose one box starts unticked. Each approval is signed, bound to that exact call and works once. Where a client can do neither, the model's confirm=true counts. SCRAPECREATORS_CONFIRM=model makes confirm=true enough everywhere, for an agent with no person to ask.
 
 Paid GET is not classified as free just because it retrieves data. A cache hit can be free, but the same request can miss and consume credits. Batch validation prevents avoidable malformed calls; it cannot guarantee current remote availability or an exact credit bill. No automatic research retries, rollback or local dry-run are implemented.
 
-The optional audit log records time, surface, tool, risk, fixed summary and guard outcome. It excludes arguments, key values, account labels and response content. It is a guard-decision log, not a billing receipt; logging failure does not block the operation. Keep the log and its parent directory private.
+The optional audit log records time, surface, tool, risk, fixed summary, the guard outcome and who approved it, then a done or failed line for each allowed call. It excludes arguments, key values, account labels and response content. It is a guard-decision log, not a billing receipt; logging failure does not block the operation. Keep the log and its parent directory private.
 
 Known keys and credential fields are redacted in output/errors. Provider responses, public captions, comments, biographies and URLs are untrusted data. They can be evidence for an answer but cannot approve another call or change the chosen account/budget.
 
 ## 13. How it works
 
-src/tools/operations.json supplies the reviewed API route/schema catalogue. src/tools/index.ts builds shared tool definitions and adds local account/batch helpers. server.ts validates exact inputs, applies the house spending guard and invokes the same handlers used through CLI in-memory MCP transport. doctor/login are CLI utilities, not extra provider tools.
+src/tools/operations.json supplies the reviewed API route/schema catalogue. src/tools/index.ts builds shared tool definitions and adds local account/batch helpers. [Slipway](https://github.com/thenavidm/slipway) validates exact inputs, applies the spending guard and invokes the same handlers from the MCP server and the CLI. doctor/login are CLI utilities, not extra provider tools.
 
 The HTTP client allows only the fixed provider origin, rejects redirects/encoded traversal, attaches the selected private x-api-key and preserves native query/body field names. It applies local pacing, response/body caps and account-only bounded rate-limit retries. No separate CLI API implementation is maintained.
 
@@ -2773,11 +2780,18 @@ Private settings only; no automatic .env loader.
 | SCRAPECREATORS_ACCOUNTS | Empty | Private JSON array of unique name/api_key/token_file profiles |
 | SCRAPECREATORS_DEFAULT_ACCOUNT | First profile | Default local credential label |
 | SCRAPECREATORS_READ_ONLY | 0 | Hide/refuse paid research; five reads remain |
-| SCRAPECREATORS_ALLOW_SPENDING | 1 | 0 refuses potentially paid calls even when confirmed |
+| SCRAPECREATORS_ALLOW_DESTRUCTIVE | 1 | 0 refuses potentially paid calls even when confirmed |
+| SCRAPECREATORS_ALLOW_SPENDING | 1 | 2.0's name for SCRAPECREATORS_ALLOW_DESTRUCTIVE, still read when that one is unset |
 | SCRAPECREATORS_AUDIT_LOG | Empty | Optional private guard-decision JSONL path |
 | SCRAPECREATORS_REQUEST_TIMEOUT_MS | 30000 | 100–300000 ms per request |
 | SCRAPECREATORS_MAX_RETRIES | 2 | 0–5; account metadata GET 429 only |
 | SCRAPECREATORS_MIN_REQUEST_INTERVAL_MS | 150 | 0–10000 ms local per-account/process pacing |
+| SCRAPECREATORS_CONFIRM | human | model lets confirm=true alone approve over MCP, for an agent with no person to ask |
+| SCRAPECREATORS_SURFACE | full | search lists three tools that find, describe and run the rest |
+| SCRAPECREATORS_TOOL_TIMEOUT_MS | Empty | Give up on any tool after this long |
+| SCRAPECREATORS_HTTP_PORT, SCRAPECREATORS_HTTP_HOST, SCRAPECREATORS_HTTP_TOKEN | 8787, 127.0.0.1, empty | For --http; any host but 127.0.0.1 needs the bearer token |
+| SCRAPECREATORS_HTTP_ALLOWED_ORIGINS | Empty | Comma-separated browser origins allowed to call --http; a page from any other site is refused |
+| SCRAPECREATORS_DEBUG | 0 | 1 prints debug lines on stderr |
 
 ## 16. Updates and removal
 
@@ -2799,7 +2813,7 @@ Read CHANGELOG.md before a major upgrade; pin a reviewed version for reproducibl
 | GUI key unavailable | Private GUI/client environment differs from terminal |
 | Key file refused | Regular nonsymlink, ≤64 KB, POSIX 0600 or private Windows ACL |
 | 401/403 | Actual provider key, account/API status; no Bearer header |
-| Paid call refused, exit 2 | Exact --confirm plus READ_ONLY/ALLOW_SPENDING policy |
+| Paid call refused, exit 2 | Exact --confirm plus READ_ONLY/ALLOW_DESTRUCTIVE policy |
 | Missing selector | Current required fields; TikTok handle/user_id, company pageId/companyName |
 | POST body rejected | Complete required body; payload/file versus body flags, not mixed |
 | First page only | Native cursor is manual; each next page needs approval |
@@ -2834,14 +2848,15 @@ Named credential isolation and bounded batch validation give this owned implemen
 
 | Component | Version / baseline | Meaning |
 | --- | --- | --- |
-| This package and desktop manifest | 2.0.0 | Shared release version |
+| This package and desktop manifest | 3.0.0 | Shared release version |
 | Node | 22+ | Manual CLI/MCP runtime |
-| MCP TypeScript SDK | 1.32.0 | Shared protocol bridge |
+| Slipway | 0.1.20 | The MCP server and the CLI from one definition of each tool |
+| MCP TypeScript SDK, through Slipway | 2.3.0 | The MCP protocol and its transports |
 | API snapshot | 2026-10-02; info 1.0.0, OpenAPI 3.1.0 | 188 reviewed operations; native route versions preserved |
 | Official CLI baseline | 1.0.44 | Reviewed current npm binary/source |
 | Legacy source baseline | 1.0.0 | 12 grouped MCP tools, 107 action routes; not a prior public npm claim |
 
-See CHANGELOG.md for the breaking grouped-action migration, source hashes and release history. Full shared API discovery plus local helpers gives 190 tools, five reads and 185 confirmation-gated calls. A tag/release/version is not live-account validation. Fresh Codex task/token evidence and desktop GUI acceptance remain separately pending.
+See CHANGELOG.md for the breaking grouped-action migration, source hashes and release history. Full shared API discovery plus local helpers gives 190 tools, five reads and 185 confirmation-gated calls. A tag/release/version is not live-account validation. Desktop GUI acceptance remains separately pending; section 7 has the measured token costs.
 
 ## 20. FAQ
 
@@ -2981,7 +2996,7 @@ The selected/original language track may be unavailable or unidentified. Preserv
 <details>
 <summary><b>Is the CLI more token efficient?</b></summary>
 
-Fresh Codex matched-task and loading-mode usage measurements are pending. No estimates, borrowed results or tool-count savings are claimed.
+In Claude Code the CLI costs nothing until it is used, plus about 1,390 tokens for `SKILL.md` once, where the server costs about 3,220 tokens a message with tool search and 88,400 with every tool loaded. In Codex, finding the command that gets a TikTok video's transcript and its flags took a median of 83,060 input tokens over the CLI and 48,790 over MCP. Section 7 has how each was measured.
 
 </details>
 
@@ -3005,7 +3020,7 @@ Navid Moazzez is a leading AI business strategist, and the host of the AI Creato
 
 ## Dependencies
 
-Runtime: MCP TypeScript SDK 1.32.0, Ajv 8.20.0 and ajv-formats 3.0.1. Development: TypeScript 7.0.2, Vitest 5.0.3, Vite 8.3.2 and MCPB 2.1.2. Exact versions are in package-lock.json; MIT notices remain in dependencies. Packaging tools are excluded from runtime bundles. See THIRD_PARTY_NOTICES.md and SECURITY.md for licensing and audit scope.
+Runtime: Slipway 0.1.20, which brings the MCP TypeScript SDK 2.3.0, plus Ajv 8.20.0 and ajv-formats 3.0.1. Development: TypeScript 7.0.2, Vitest 5.0.3, Vite 8.3.2 and MCPB 2.1.2. Exact versions are in package-lock.json; MIT notices remain in dependencies. Packaging tools are excluded from runtime bundles. See THIRD_PARTY_NOTICES.md and SECURITY.md for licensing and audit scope.
 
 ## License
 

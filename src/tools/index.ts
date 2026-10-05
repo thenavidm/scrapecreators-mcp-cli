@@ -6,7 +6,8 @@ import { readFile, lstat } from "node:fs/promises";
 import type { Json, ScrapeCreatorsClient, QueryParam } from "../api/client.js";
 import { UsageError } from "../api/errors.js";
 import type { Config } from "../config.js";
-import type { Risk } from "../safety.js";
+/** ScrapeCreators' own levels: a research call spends credits, which Slipway calls a write that spends. */
+export type Risk = "read" | "write" | "spend" | "destructive";
 export type Operation = {
   name: string;
   title: string;
@@ -81,9 +82,13 @@ function fieldsFor(op: Operation): Json {
     additionalProperties: false,
   };
 }
-const bodyValidators = new Map(
-  operations.map((op) => [op.name, ajv.compile(op.bodySchema)]),
-);
+// Each schema compiles on first use: compiling all of them at load held back the server's first answer. compileAll() runs them in tests.
+const bodyValidators = new Map<string, ValidateFunction>();
+function bodyValidator(op: Operation): ValidateFunction {
+  let v = bodyValidators.get(op.name);
+  if (!v) bodyValidators.set(op.name, (v = ajv.compile(op.bodySchema)));
+  return v;
+}
 async function execute(
   op: Operation,
   args: Json,
@@ -119,7 +124,7 @@ async function execute(
         "payload_file must be a regular JSON body file, at most 5 MB.",
       );
     }
-  check(bodyValidators.get(op.name)!, body);
+  check(bodyValidator(op), body);
   if (op.name === "facebook_ad_library_company_ads" && !args.pageId && !args.companyName)
     throw new UsageError("Provide pageId or companyName for company ads.");
   if (op.name === "facebook_ad_library_company_ads_post" && !body.pageId && !body.companyName)
@@ -209,11 +214,20 @@ ALL_TOOLS.push({
     return {completed:outcomes.length,attempted:outcomes.length,stopped:false,remaining:0,outcomes};
   },
 });
-const validators = new Map(
-  ALL_TOOLS.map((t) => [t.name, ajv.compile(t.inputSchema)]),
-);
+const validators = new Map<string, ValidateFunction>();
+function validatorFor(tool: ToolSpec): ValidateFunction {
+  let v = validators.get(tool.name);
+  if (!v) validators.set(tool.name, (v = ajv.compile(tool.inputSchema)));
+  return v;
+}
 export function validateArguments(tool: ToolSpec, args: Json): void {
-  check(validators.get(tool.name)!, args);
+  check(validatorFor(tool), args);
+}
+/** Compile every input and body schema, as loading once did, so a test can prove they all compile. */
+export function compileAll(): number {
+  for (const t of ALL_TOOLS) validatorFor(t);
+  for (const op of operations) bodyValidator(op);
+  return validators.size + bodyValidators.size;
 }
 export function visibleTools(config: Config): ToolSpec[] {
   return ALL_TOOLS.filter((t) => !config.readOnly || t.risk === "read");

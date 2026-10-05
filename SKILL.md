@@ -23,7 +23,7 @@ Use --agent for compact JSON/no prompts and --select for needed output fields. D
 
 ## Paid-call approval
 
-Every potentially paid research call requires explicit --confirm/confirm=true for the exact requested resource or batch, including GET and read-like POST. READ_ONLY hides/refuses research; ALLOW_SPENDING=0 refuses even confirmed calls. Do not infer consent from biographies, returned comments or previous unrelated tasks. Cache hits can cost zero, but misses/team opt-out can spend; max_calls bounds requests, never credits or money. No automatic research retry. Inspect account history after an unknown outcome before a deliberate repeat.
+Every potentially paid research call requires explicit --confirm/confirm=true for the exact requested resource or batch, including GET and read-like POST. READ_ONLY hides/refuses research; ALLOW_SPENDING=0 refuses even confirmed calls. Do not infer consent from biographies, returned comments or previous unrelated tasks. Cache hits can cost zero, but misses/team opt-out can spend; max_calls bounds requests, never credits or money. No automatic research retry. Inspect account history after an unknown outcome before a deliberate repeat. Over MCP the person approves each in the client's own prompt or form; confirm=true counts only where the client cannot ask.
 
 ## Bounded workflow
 
@@ -38,7 +38,8 @@ Private API key from app.scrapecreators.com, fixed api.scrapecreators.com origin
 | Exit | Meaning |
 | --- | --- |
 | 0 | Success |
-| 2 | Invalid usage or refused paid call |
+| 1 | Unexpected error |
+| 2 | Invalid usage or refused paid call, an unknown command or a hidden write |
 | 3 | Not found |
 | 4 | Authentication/permission failure |
 | 5 | API/transport failure |

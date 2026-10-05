@@ -18,14 +18,6 @@ The official agent-config source writes Codex setup to ~/.codex/mcp.json; our in
 Named credential isolation and bounded batch validation give this owned implementation a useful case. Neither 190 versus 188 tool names nor SEO demonstrates greater coverage, task quality or token efficiency. Official hosted setup may be easier for remote-only clients. Community README capabilities above were inspected, not authenticated or benchmarked. No overall winner is declared.
 
 
-MCP and CLI use the same SDK server, schemas, validation and HTTP handlers. The CLI talks to that server through the SDK's in-memory transport; there is no second API implementation.
+MCP and CLI use the same schemas, validation and HTTP handlers: [Slipway](https://github.com/thenavidm/slipway) builds the MCP server, over stdio or `--http`, and the CLI from each tool's one definition; there is no second API implementation.
 
-| Measurement | What to include |
-| --- | --- |
-| Eager MCP loading | All tool schemas and instructions |
-| Default/deferred tool search | Actual selected schemas and discovery overhead |
-| Skill read once | Full SKILL.md and command discovery |
-| Recurring skill discovery | The installed skill's listing text |
-| Matched successful task | Help/schema, reasoning, calls/commands, results, errors and retries |
-
-Fresh Codex usage measurements are pending. Claude Code measurements are deferred and do not block this release. Do not estimate tokens from characters, substitute another repo's results or declare zero CLI cost. Record model/client/package versions and date, loading settings, input/output usage, latency and equivalent outcomes. Compare a small public-profile lookup and a bounded transcript research task across supported official/local surfaces, using the same authorized data and result fields. API credits and service costs remain separate. No measured superiority is claimed.
+README section 7 has this package's measured Claude Code and Codex costs against 2.0.1. No other offering was measured, so no comparison with one is claimed.

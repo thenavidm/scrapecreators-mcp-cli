@@ -6,7 +6,7 @@ One npm package includes both binaries and all **190 tools**. Requires Node.js 2
 | --- | --- | --- |
 | Terminal | scrapecreators-cli | Scripts and agents with a shell |
 | Local MCP | scrapecreators-mcp | AI clients supporting stdio |
-| Desktop archive | scrapecreators-2.0.0.mcpb | Compatible Claude Desktop custom extensions |
+| Desktop archive | scrapecreators-3.0.0.mcpb | Compatible Claude Desktop custom extensions |
 | ScrapeCreators-hosted alternative | https://api.scrapecreators.com/mcp/api | Official remote OAuth, owner/manager access |
 
 ## Contents
@@ -120,7 +120,7 @@ Alternatively install the CLI, make SKILL.md available to Claude, and use shell 
 
 ### Install the .mcpb extension
 
-1. Download `scrapecreators-2.0.0.mcpb` from [GitHub Releases](https://github.com/thenavidm/scrapecreators-mcp-cli/releases/latest).
+1. Download `scrapecreators-3.0.0.mcpb` from [GitHub Releases](https://github.com/thenavidm/scrapecreators-mcp-cli/releases/latest).
 2. In a supported Claude Desktop build, open **Settings > Extensions > Advanced settings > Install Extension…** and select it.
 3. Enter a private API key in the sensitive setting, or an absolute private token-file path. Leave the unused credential method empty. ScrapeCreators uses x-api-key authentication.
 4. Enable read-only if you want only the five local/account reads. Reconnect and ask for account verification.

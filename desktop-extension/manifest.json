@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "scrapecreators",
   "display_name": "ScrapeCreators",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "ScrapeCreators MCP: 190 tools, private accounts, confirmed paid research and bounded batches.",
   "long_description": "Shared API/schema/guard implementation. Research may consume credits and requires explicit confirmation. Private credentials stay local. Account metadata reads and local discovery remain available in read-only mode. Fixtures and protocol validation are not live account outcomes.",
   "author": {
